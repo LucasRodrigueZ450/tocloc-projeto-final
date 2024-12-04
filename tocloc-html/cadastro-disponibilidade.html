@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Disponibilidade</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            margin-top: 50px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" class="container">
+        <h2 class="text-center mb-4">Cadastro de Disponibilidade</h2>
+
+        <!-- Exibição do Local Esportivo -->
+        <div v-if="local">
+            <h4>{{ local.nome }}</h4>
+            <p>
+                <strong>Endereço:</strong> {{ local.endereco }} <br>
+                <strong>Capacidade:</strong> {{ local.capacidade }} pessoas <br>
+                <strong>Esporte:</strong> {{ local.tipoEsporte }}
+            </p>
+        </div>
+
+        <!-- Botão Início -->
+        <button @click="goToDashboard" class="btn btn-primary mb-3">Início</button>
+
+        <!-- Formulário de Cadastro -->
+        <form @submit.prevent="submitForm">
+            <div class="form-group">
+                <label for="dataHora">Data e Hora</label>
+                <input type="datetime-local" id="dataHora" v-model="disponibilidade.dataHora" class="form-control" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Cadastrar Disponibilidade</button>
+        </form>
+
+        <!-- Mensagem de Sucesso ou Erro -->
+        <div v-if="message" class="alert mt-3" :class="{'alert-success': success, 'alert-danger': !success}">
+            {{ message }}
+        </div>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                localId: null,
+                local: null, // Dados do local esportivo
+                disponibilidade: {
+                    dataHora: '', // Nova propriedade para o formato esperado no backend
+                    disponibilidade: true, // Define que a disponibilidade começa como ativa
+                    localEsportivo: null // Relacionamento com Local Esportivo
+                },
+                message: '', // Mensagem de sucesso ou erro
+                success: false // Status da operação
+            },
+            created() {
+                // Pegar o ID do local da query string
+                const params = new URLSearchParams(window.location.search);
+                this.localId = params.get('localId');
+
+                if (this.localId) {
+                    this.loadLocal();
+                } else {
+                    this.message = 'Erro: Local esportivo não encontrado!';
+                    this.success = false;
+                }
+            },
+            methods: {
+                loadLocal() {
+                    axios.get(`http://localhost:8080/api/locais-esportivos/${this.localId}`)
+                        .then(response => {
+                            this.local = response.data;
+                            this.disponibilidade.localEsportivo = this.local; // Associa o local à disponibilidade
+                        })
+                        .catch(error => {
+                            console.error('Erro ao carregar local:', error);
+                            this.message = 'Erro ao carregar o local esportivo. Tente novamente mais tarde.';
+                            this.success = false;
+                        });
+                },
+                submitForm() {
+                    if (!this.localId) {
+                        this.message = 'Erro: Não é possível cadastrar disponibilidade sem associar a um local!';
+                        this.success = false;
+                        return;
+                    }
+
+                    // Formatar a data e o horário para o campo esperado no backend
+                    this.disponibilidade.dataHora = `${this.disponibilidade.dataHora}:00`; // Adiciona os segundos
+
+                    axios.post(`http://localhost:8080/api/disponibilidades`, this.disponibilidade)
+                        .then(response => {
+                            this.message = 'Disponibilidade cadastrada com sucesso!';
+                            this.success = true;
+                            this.resetForm();
+                        })
+                        .catch(error => {
+                            console.error('Erro ao cadastrar disponibilidade:', error);
+                            this.message = 'Erro ao cadastrar a disponibilidade. Verifique os dados.';
+                            this.success = false;
+                        });
+                },
+                resetForm() {
+                    this.disponibilidade.dataHora = '';
+                },
+                goToDashboard() {
+                    // Redireciona diretamente para a página de dashboard do host
+                    window.location.href = "dashboard-host.html"; // Altere o URL conforme necessário para o dashboard
+                }
+            }
+        });
+    </script>
+
+    <!-- Bootstrap JS e dependências -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+
+</html>

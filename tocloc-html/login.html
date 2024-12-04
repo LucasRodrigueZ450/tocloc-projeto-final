@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Tocloc</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="index.html">Tocloc</a>
+    </nav>
+
+    <!-- Formulário de Login -->
+    <div id="app" class="container mt-5">
+        <h2 class="text-center">Login</h2>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <form @submit.prevent="login">
+                    <div class="form-group">
+                        <label for="cpfInput">CPF</label>
+                        <input type="text" class="form-control" id="cpfInput" v-model="cpf" placeholder="Digite seu CPF" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="senhaInput">Senha</label>
+                        <input type="password" class="form-control" id="senhaInput" v-model="password" placeholder="Digite sua senha" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tipoUsuario">Tipo de Usuário</label>
+                        <select class="form-control" v-model="tipoUsuario" id="tipoUsuario" required>
+                            <option value="common">Usuário Comum</option>
+                            <option value="host">Usuário Anfitrião</option>
+                        </select>
+                    </div>
+
+                    <p v-if="errorMessage" style="color: red;" class="text-center">{{ errorMessage }}</p>
+
+                    <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+                </form>
+
+                <!-- Link para Cadastro -->
+                <div class="text-center mt-3">
+                    <p>Não tem uma conta? <a href="cadastro.html">Cadastre-se</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white text-center py-4">
+        <p>&copy; 2023 Tocloc. Todos os direitos reservados.</p>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                cpf: '',
+                password: '',
+                tipoUsuario: 'common',
+                errorMessage: ''
+            },
+            methods: {
+                login() {
+                    const url = this.tipoUsuario === 'common'
+                        ? 'http://localhost:8080/api/common-users/authenticate'
+                        : 'http://localhost:8080/api/hosts/authenticate';
+
+                    this.errorMessage = ''; // Limpa mensagens de erro anteriores
+
+                    axios.post(url, { cpf: this.cpf, password: this.password })
+                        .then(response => {
+                            if (response.status === 200) {
+                                const userData = response.data;
+
+                                // Armazena os dados do usuário no localStorage
+                                localStorage.setItem('user', JSON.stringify(userData));
+
+                                alert('Login realizado com sucesso!');
+                                 
+                                const dashboard = this.tipoUsuario === 'common'
+                                    ? 'dashboard-common.html'
+                                    : 'dashboard-host.html';
+                                window.location.href = dashboard;
+                            } else {
+                                this.errorMessage = 'Erro ao autenticar. Tente novamente.';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro ao autenticar:', error);
+                            this.errorMessage = 'CPF ou senha incorretos.';
+                        });
+                }
+            }
+        });
+    </script>
+
+</body>
+
+</html>

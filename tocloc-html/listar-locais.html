@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locais da Empresa - Tocloc</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- FontAwesome (para os ícones) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+
+        .container {
+            min-height: 80vh;
+        }
+
+        footer {
+            position: relative;
+            bottom: 0;
+            width: 100%;
+            background-color: #343a40;
+            color: #fff;
+            padding: 10px 0;
+        }
+
+        .modal-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .card-body {
+            text-align: center;
+        }
+
+        .action-icons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .action-icons i {
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand" href="#">Tocloc</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard-host.html">Início</a>
+                    </li>
+
+                    <li class="nav-item dropdown" v-if="user">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <img src="assets/img/user-icon.png" alt="Ícone de usuário" class="rounded-circle" width="30"
+                                height="30"> {{ user.name || 'Usuário' }}
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                            <a class="dropdown-item" href="#" @click="logout">Sair</a>
+                        </div>
+                    </li>
+                    <li class="nav-item" v-else>
+                        <a class="nav-link" href="login.html">Entrar</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Lista de Locais -->
+        <div class="container mt-5">
+            <h2 class="text-center mb-4">Locais da Empresa: {{ empresa.companyName }}</h2>
+
+            <!-- Verifica se há locais cadastrados -->
+            <div v-if="locais.length > 0">
+                <div class="row">
+                    <!-- Loop para listar os locais -->
+                    <div class="col-md-4" v-for="local in locais" :key="local.id">
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ local.nome }}</h5>
+                                <p class="card-text">
+                                    <strong>Endereço:</strong> {{ local.endereco }} <br>
+                                    <strong>Capacidade:</strong> {{ local.capacidade }} pessoas <br>
+                                    <strong>Esporte:</strong> {{ local.tipoEsporte }}
+                                </p>
+                                <a :href="'cadastro-disponibilidade.html?localId=' + local.id"
+                                    class="btn btn-primary mb-2">Cadastrar Disponibilidade</a>
+                                <button @click="openDisponibilidadeModal(local.id)" class="btn btn-info">Listar
+                                    Disponibilidades</button>
+
+                                <!-- Botões de Ação -->
+                                <div class="action-icons mt-2">
+                                    <i class="fas fa-edit" @click="editLocal(local.id)"></i>
+                                    <i class="fas fa-trash" @click="deleteLocal(local.id)"></i>
+                                </div>
+
+                                <!-- Modal para listar disponibilidades -->
+                                <div class="modal fade" :id="'disponibilidadeModal-' + local.id" tabindex="-1"
+                                    role="dialog" :aria-labelledby="'disponibilidadeModalLabel-' + local.id"
+                                    aria-hidden="true">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" :id="'disponibilidadeModalLabel-' + local.id">
+                                                    Disponibilidades do Local: {{ local.nome }}</h5>
+                                                <button type="button" class="close" data-dismiss="modal"
+                                                    aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div v-if="local.disponibilidades.length > 0">
+                                                    <ul class="list-group">
+                                                        <li class="list-group-item"
+                                                            v-for="disponibilidade in local.disponibilidades"
+                                                            :key="disponibilidade.id">
+                                                            {{ disponibilidade.dataHora }}
+                                                            <div class="action-icons">
+                                                                <i class="fas fa-edit"
+                                                                    @click="editDisponibilidade(disponibilidade.id)"></i>
+                                                                <i class="fas fa-trash"
+                                                                    @click="deleteDisponibilidade(disponibilidade.id)"></i>
+                                                            </div>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                                <div v-else class="alert alert-warning">
+                                                    Não há disponibilidades cadastradas.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Caso não haja locais -->
+            <div v-else class="alert alert-warning text-center">
+                Esta empresa ainda não possui locais cadastrados.
+                <a :href="'cadastro-locais.html?empresaId=' + empresaId" class="alert-link">Cadastre um local esportivo
+                    aqui!</a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="bg-dark text-white text-center py-4">
+            <p>&copy; 2023 Tocloc. Todos os direitos reservados.</p>
+        </footer>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                user: JSON.parse(localStorage.getItem('user')), // Carregar o usuário do localStorage
+                empresaId: null, // ID da empresa
+                empresa: {}, // Dados da empresa
+                locais: [] // Lista de locais da empresa
+            },
+            created() {
+                // Recuperar o ID da empresa da URL
+                const urlParams = new URLSearchParams(window.location.search);
+                this.empresaId = urlParams.get('empresaId');
+
+                if (this.empresaId) {
+                    this.loadEmpresaLocais();
+                } else {
+                    alert('Empresa não encontrada!');
+                    window.location.href = 'dashboard-host.html'; // Redireciona para o dashboard
+                }
+            },
+            methods: {
+                loadEmpresaLocais() {
+                    axios.get(`http://localhost:8080/api/empresas/${this.empresaId}`)
+                        .then(response => {
+                            this.empresa = response.data;
+                            this.locais = response.data.locaisEsportivos || []; // Locais associados à empresa
+                            // Carregar as disponibilidades de cada local
+                            this.locais.forEach(local => {
+                                // Aqui estamos fazendo a requisição correta
+                                axios.get(`http://localhost:8080/api/locais-esportivos/${local.id}`)
+                                    .then(res => {
+                                        local.disponibilidades = res.data.disponibilidades || []; // Associar disponibilidades ao local
+                                    })
+                                    .catch(error => {
+                                        console.error('Erro ao carregar disponibilidades:', error);
+                                    });
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Erro ao carregar locais:', error);
+                            alert('Erro ao carregar os locais. Tente novamente mais tarde.');
+                        });
+                },
+                openDisponibilidadeModal(localId) {
+                    // Mostrar o modal correspondente ao local
+                    $(`#disponibilidadeModal-${localId}`).modal('show');
+                },
+                editDisponibilidade(disponibilidadeId) {
+                    // Lógica para editar disponibilidade
+                    const novaDataHora = prompt('Informe a nova data e hora para a disponibilidade:');
+                    if (novaDataHora) {
+                        const dadosAtualizados = {
+                            dataHora: novaDataHora,
+                            disponibilidade: true // ou false, dependendo do estado da disponibilidade
+                        };
+
+                        axios.put(`http://localhost:8080/api/disponibilidades/${disponibilidadeId}`, dadosAtualizados)
+                            .then(response => {
+                                alert('Disponibilidade atualizada com sucesso!');
+                                this.loadEmpresaLocais(); // Recarregar locais e disponibilidades
+                            })
+                            .catch(error => {
+                                console.error('Erro ao editar a disponibilidade:', error);
+                                alert('Erro ao atualizar a disponibilidade.');
+                            });
+                    }
+                },
+                deleteDisponibilidade(disponibilidadeId) {
+                    // Lógica para deletar disponibilidade
+                    if (confirm('Tem certeza que deseja excluir esta disponibilidade?')) {
+                        axios.delete(`http://localhost:8080/api/disponibilidades/${disponibilidadeId}`)
+                            .then(response => {
+                                alert('Disponibilidade excluída com sucesso!');
+                                this.loadEmpresaLocais(); // Recarregar locais e disponibilidades
+                            })
+                            .catch(error => {
+                                console.error('Erro ao excluir a disponibilidade:', error);
+                                alert('Erro ao excluir a disponibilidade.');
+                            });
+                    }
+                },
+                editLocal(localId) {
+                    window.location.href = `cadastro-local.html?localId=${localId}&empresaId=${this.empresaId}`;
+                },
+                deleteLocal(localId) {
+                    if (confirm('Tem certeza que deseja excluir este local?')) {
+                        axios.delete(`http://localhost:8080/api/locais-esportivos/${localId}`)
+                            .then(response => {
+                                alert('Local excluído com sucesso!');
+                                this.loadEmpresaLocais(); // Recarregar locais da empresa
+                            })
+                            .catch(error => {
+                                console.error('Erro ao excluir o local:', error);
+                                alert('Erro ao excluir o local.');
+                            });
+                    }
+                },
+                logout() {
+                    localStorage.removeItem('user');
+                    window.location.href = 'login.html';
+                }
+            }
+        });
+    </script>
+
+    <!-- Bootstrap JS e dependências -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+</body>
+
+</html>

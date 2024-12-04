@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro - Tocloc</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="index.html">Tocloc</a>
+    </nav>
+
+    <!-- Formulário de Cadastro -->
+    <div id="app" class="container mt-5">
+        <h2 class="text-center">Cadastro</h2>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <form @submit.prevent="register">
+                    <div class="form-group">
+                        <label for="nameInput">Nome Completo</label>
+                        <input type="text" class="form-control" id="nameInput" v-model="name" placeholder="Digite seu nome completo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cpfInput">CPF</label>
+                        <input type="text" class="form-control" id="cpfInput" v-model="cpf" placeholder="Digite seu CPF" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="dobInput">Data de Nascimento</label>
+                        <input type="date" class="form-control" id="dobInput" v-model="dateOfBirth" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="emailInput">Email</label>
+                        <input type="email" class="form-control" id="emailInput" v-model="email" placeholder="Digite seu email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="passwordInput">Senha</label>
+                        <input type="password" class="form-control" id="passwordInput" v-model="password" placeholder="Digite sua senha" required>
+                    </div>
+
+                    <!-- Campo para selecionar o tipo de usuário -->
+                    <div class="form-group">
+                        <label for="tipoUsuario">Tipo de Usuário</label>
+                        <select class="form-control" v-model="tipoUsuario" id="tipoUsuario" required>
+                            <option value="common">Usuário Comum</option>
+                            <option value="host">Usuário Anfitrião</option>
+                        </select>
+                    </div>
+
+                    <p v-if="errorMessage" style="color: red;" class="text-center">{{ errorMessage }}</p>
+
+                    <button type="submit" class="btn btn-success btn-block">Cadastrar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white text-center py-4">
+        <p>&copy; 2023 Tocloc. Todos os direitos reservados.</p>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                name: '',
+                cpf: '',
+                dateOfBirth: '',
+                email: '',
+                password: '',
+                tipoUsuario: 'common', // Usuário comum por padrão
+                errorMessage: ''
+            },
+            methods: {
+                register() {
+                    // Definindo a URL de registro de acordo com o tipo de usuário
+                    const url = this.tipoUsuario === 'common'
+                        ? 'http://localhost:8080/api/common-users'
+                        : 'http://localhost:8080/api/hosts';
+
+                    // Preparando os dados para envio
+                    const data = {
+                        name: this.name,
+                        cpf: this.cpf,
+                        dateOfBirth: this.dateOfBirth,
+                        email: this.email,
+                        password: this.password
+                    };
+
+                    this.errorMessage = ''; // Limpa mensagens de erro anteriores
+
+                    // Envia os dados para o backend
+                    axios.post(url, data)
+                    .then(response => {
+                        if (response.status === 201) {
+                            alert('Cadastro realizado com sucesso!');
+                            window.location.href = 'login.html'; // Redireciona para a página de login após o cadastro
+                        } else {
+                            this.errorMessage = 'Erro ao cadastrar. Tente novamente.';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro ao cadastrar:', error);
+                        this.errorMessage = 'Ocorreu um erro ao tentar cadastrar. Tente novamente.';
+                    });
+                }
+            }
+        });
+    </script>
+
+</body>
+
+</html>

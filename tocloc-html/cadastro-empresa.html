@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Empresa - Tocloc</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        .container {
+            min-height: 80vh;
+        }
+
+        footer {
+            position: relative;
+            bottom: 0;
+            width: 100%;
+            background-color: #343a40;
+            color: #fff;
+            padding: 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand" href="#">Tocloc</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard-host.html">Início</a>
+                    </li>
+                    <li class="nav-item dropdown" v-if="user">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <img src="assets/img/user-icon.png" alt="Ícone de usuário" class="rounded-circle" width="30"
+                                height="30"> {{ user.name || 'Usuário' }}
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                            <a class="dropdown-item" href="#" @click="logout">Sair</a>
+                        </div>
+                    </li>
+                    <li class="nav-item" v-else>
+                        <a class="nav-link" href="login.html">Entrar</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Conteúdo principal -->
+        <div class="container mt-5">
+            <h2 class="text-center mb-4">Cadastro de Empresa</h2>
+
+            <!-- Formulário de Cadastro -->
+            <form @submit.prevent="cadastrarEmpresa">
+                <div class="form-group">
+                    <label for="companyName">Nome da Empresa</label>
+                    <input type="text" class="form-control" id="companyName" v-model="empresa.companyName" required>
+                </div>
+                <div class="form-group">
+                    <label for="cnpj">CNPJ</label>
+                    <input type="text" class="form-control" id="cnpj" v-model="empresa.cnpj" required>
+                </div>
+                <div class="form-group">
+                    <label for="status">Status</label>
+                    <select class="form-control" id="status" v-model="empresa.status" required>
+                        <option value="Ativa">Ativa</option>
+                        <option value="Inativa">Inativa</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Cadastrar</button>
+            </form>
+
+            <!-- Exibição de erro ou sucesso -->
+            <div v-if="errorMessage" class="alert alert-danger mt-3">
+                {{ errorMessage }}
+            </div>
+            <div v-if="successMessage" class="alert alert-success mt-3">
+                {{ successMessage }}
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="bg-dark text-white text-center py-4">
+            <p>&copy; 2023 Tocloc. Todos os direitos reservados.</p>
+        </footer>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                user: JSON.parse(localStorage.getItem('user')), // Carregar o usuário do localStorage
+                empresa: {
+                    companyName: '',
+                    cnpj: '',
+                    status: 'Ativa' // Inicialmente como string para o select
+                },
+                hostId: '', // ID do host será atribuído aqui
+                errorMessage: '',
+                successMessage: ''
+            },
+            created() {
+                // Recuperar o usuário e validar autenticação
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (user && user.id) {
+                    this.hostId = user.id;
+                } else {
+                    this.errorMessage = 'Usuário não autenticado. Por favor, faça login.';
+                }
+            },
+            methods: {
+                cadastrarEmpresa() {
+                    // Validar campos obrigatórios
+                    if (!this.empresa.companyName || !this.empresa.cnpj || !this.hostId) {
+                        this.errorMessage = 'Todos os campos são obrigatórios.';
+                        return;
+                    }
+
+                    // Mapear o status para booleano
+                    const statusBoolean = this.empresa.status === 'Ativa';
+
+                    // Enviar dados via Axios
+                    const url = `http://localhost:8080/api/hosts/${this.hostId}/empresas`;
+                    axios.post(url, {
+                        companyName: this.empresa.companyName,
+                        cnpj: this.empresa.cnpj,
+                        statusEmpresa: statusBoolean // Enviar status como booleano
+                    })
+                    .then(response => {
+                        this.successMessage = 'Empresa cadastrada com sucesso!';
+                        this.errorMessage = '';
+                        this.empresa = { companyName: '', cnpj: '', status: 'Ativa' }; // Limpar formulário
+
+                        // Redirecionar após o cadastro
+                        setTimeout(() => {
+                            window.location.href = 'dashboard-host.html';
+                        }, 2000);
+                    })
+                    .catch(error => {
+                        this.errorMessage = 'Erro ao cadastrar empresa: ' + (error.response?.data?.message || error.message);
+                        this.successMessage = '';
+                    });
+                },
+                logout() {
+                    localStorage.removeItem('user');
+                    window.location.href = 'login.html';
+                }
+            }
+        });
+    </script>
+
+    <!-- Bootstrap JS e dependências -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tocloc - Plataforma de Reservas Esportivas</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Arquivo CSS externo -->
+    <link rel="stylesheet" href="assets/css/style.css">
+    <!-- Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand" href="#">Tocloc</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Início</a></li>
+                    <li class="nav-item"><a class="nav-link" href="login.html">Entrar</a></li>
+                    <li class="nav-item"><a class="nav-link" href="register.html">Cadastrar</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="jumbotron text-center text-white"
+            style="background: url('assets/img/backgraund-hero.jpg') center/cover no-repeat; background-blend-mode: overlay; background-color: rgba(0,0,0,0.5);">
+            <div class="container">
+                <h1 class="display-4">Bem-vindo à Tocloc!</h1>
+                <p class="lead">A plataforma para reservar locais esportivos com facilidade.</p>
+                <a href="login.html" class="btn btn-light btn-lg">Entrar ou Cadastrar-se</a>
+            </div>
+        </section>
+
+
+        <section class="container my-5">
+            <h2 class="text-center">Locais Esportivos em Destaque</h2>
+            <div class="row mt-4" v-if="locais.length > 0">
+                <!-- Renderiza dinamicamente os cartões -->
+                <div class="col-md-4" v-for="local in locais" :key="local.id">
+                    <div class="card">
+                        <!-- Usa caminho relativo para imagens locais -->
+                        <img :src="getImageUrl(local.tipoEsporte)" class="card-img-top img-card" :alt="local.nome">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ local.nome }}</h5>
+                            <p class="card-text">{{ local.tipoEsporte }} - Capacidade: {{ local.capacidade }} pessoas</p>
+                            <p class="card-text text-muted">{{ local.endereco }}</p>
+                            <a href="login.html" class="btn btn-primary">Reservar</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Mensagem caso não haja locais -->
+            <div v-else class="alert alert-info text-center mt-4">
+                Nenhum local esportivo disponível no momento.
+            </div>
+        </section>
+        
+
+        <!-- Sobre a Tocloc -->
+        <section class="bg-light py-5">
+            <div class="container">
+                <h2 class="text-center">Sobre a Tocloc</h2>
+                <p class="text-center">Conectamos jogadores e donos de espaços esportivos para que todos possam praticar
+                    seu esporte favorito com facilidade. Faça uma reserva rápida, segura e eficiente, onde e quando
+                    quiser!</p>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="bg-dark text-white text-center py-4">
+            <p>&copy; 2023 Tocloc. Todos os direitos reservados.</p>
+        </footer>
+    </div>
+
+   <!-- Vue.js Script -->
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            locais: [] // Armazena os locais esportivos
+        },
+        methods: {
+            fetchLocais() {
+                // Ajuste o endpoint para o seu backend
+                axios.get('http://localhost:8080/api/locais-esportivos')
+                    .then(response => {
+                        this.locais = response.data.map(local => {
+                            // Associa uma imagem de acordo com o tipo de esporte
+                            local.imagem = this.getImageUrl(local.tipoEsporte);
+                            return local;
+                        }); // Popula a lista de locais
+                    })
+                    .catch(error => {
+                        console.error('Erro ao buscar locais esportivos:', error);
+                    });
+            },
+            getImageUrl(tipoEsporte) {
+                // Associa imagens com base no tipo de esporte
+                const imagens = {
+                    'Futebol': 'campo_society',
+                    'Basquete': 'quadra_basket',
+                    'Tênis': 'quadra_tennis'
+                };
+
+                // Retorna o caminho da imagem com base no tipo de esporte
+                return imagens[tipoEsporte] ? `assets/img/cards/${imagens[tipoEsporte]}.jpg` : 'assets/img/default.jpg';
+            }
+        },
+        created() {
+            this.fetchLocais(); // Busca os dados ao montar o componente
+        }
+    });
+</script>
+    <!-- JavaScript e Bootstrap -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Local Esportivo</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            margin-top: 50px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand" href="#">Tocloc</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard-host.html">Início</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="cadastro-empresa.html">Cadastrar Empresa</a>
+                    </li>
+                    <li class="nav-item dropdown" v-if="user">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <img src="assets/img/user-icon.png" alt="Ícone de usuário" class="rounded-circle" width="30"
+                                height="30"> {{ user.name || 'Usuário' }}
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                            <a class="dropdown-item" href="#" @click="logout">Sair</a>
+                        </div>
+                    </li>
+                    <li class="nav-item" v-else>
+                        <a class="nav-link" href="login.html">Entrar</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Conteúdo principal -->
+        <div class="container">
+            <h2 class="text-center mb-4">Cadastro de Local Esportivo</h2>
+
+            <!-- Formulário de Cadastro -->
+            <form @submit.prevent="submitForm">
+                <div class="form-group">
+                    <label for="nome">Nome do Local Esportivo</label>
+                    <input type="text" id="nome" v-model="local.nome" class="form-control" placeholder="Digite o nome" required>
+                </div>
+                <div class="form-group">
+                    <label for="endereco">Endereço</label>
+                    <input type="text" id="endereco" v-model="local.endereco" class="form-control" placeholder="Digite o endereço" required>
+                </div>
+                <div class="form-group">
+                    <label for="capacidade">Capacidade</label>
+                    <input type="number" id="capacidade" v-model="local.capacidade" class="form-control" placeholder="Digite a capacidade" required>
+                </div>
+                <div class="form-group">
+                    <label for="tipoEsporte">Tipo de Esporte</label>
+                    <input type="text" id="tipoEsporte" v-model="local.tipoEsporte" class="form-control" placeholder="Digite o tipo de esporte" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Cadastrar</button>
+            </form>
+
+            <!-- Mensagem de Sucesso ou Erro -->
+            <div v-if="message" class="alert mt-3" :class="{'alert-success': success, 'alert-danger': !success}">
+                {{ message }}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                user: JSON.parse(localStorage.getItem('user')), // Carregar o usuário do localStorage
+                local: {
+                    nome: '',
+                    endereco: '',
+                    capacidade: null,
+                    tipoEsporte: '',
+                    empresa: {} // Será preenchido com o ID da empresa
+                },
+                empresaId: null, // Recebido via query string
+                message: '', // Mensagem de sucesso ou erro
+                success: false // Status da operação
+            },
+            created() {
+                // Pegar o ID da empresa da query string
+                const params = new URLSearchParams(window.location.search);
+                this.empresaId = params.get('empresaId');
+
+                if (this.empresaId) {
+                    // Define o ID da empresa no local esportivo
+                    this.local.empresa.id = parseInt(this.empresaId);
+                } else {
+                    this.message = 'Erro: Empresa não encontrada!';
+                    this.success = false;
+                }
+            },
+            methods: {
+                submitForm() {
+                    if (!this.empresaId) {
+                        this.message = 'Erro: Não é possível cadastrar sem associar a uma empresa!';
+                        this.success = false;
+                        return;
+                    }
+
+                    axios.post('http://localhost:8080/api/locais-esportivos', this.local)
+                        .then(response => {
+                            this.message = 'Local esportivo cadastrado com sucesso!';
+                            this.success = true;
+
+                            // Redireciona para a página de cadastro de disponibilidade
+                            const novoLocalId = response.data.id; // ID retornado do backend
+                            window.location.href = `cadastro-disponibilidade.html?localId=${novoLocalId}`;
+                        })
+                        .catch(error => {
+                            console.error(error);
+                            this.message = 'Erro ao cadastrar o local esportivo. Verifique os dados.';
+                            this.success = false;
+                        });
+                },
+                logout() {
+                    localStorage.removeItem('user');
+                    window.location.href = 'login.html';
+                }
+            }
+        });
+    </script>
+
+    <!-- Bootstrap JS e dependências -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+
+</html>

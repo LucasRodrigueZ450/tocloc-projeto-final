@@ -1,0 +1,161 @@
+/* Variáveis de Cores */
+:root {
+    --primary-color: #007bff;
+    --primary-hover-color: #0056b3;
+    --text-color: #333;
+    --bg-color: #f4f4f4;
+    --footer-bg-color: #333;
+    --footer-text-color: #fff;
+    --card-shadow: rgba(0, 0, 0, 0.1);
+}
+
+/* Reset básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Layout Global */
+html, body {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    font-family: Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+.container {
+    margin-top: 30px;
+}
+
+/* Navbar */
+.navbar {
+    margin-bottom: 30px;
+}
+
+/* Rodapé */
+footer {
+    background-color: var(--footer-bg-color);
+    color: var(--footer-text-color);
+    text-align: center;
+    padding: 1rem 0;
+    margin-top: auto;
+    width: 100%;
+}
+
+/* Wrapper de Conteúdo para Flexibilidade */
+.content-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Cartões */
+.card {
+    margin-bottom: 20px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px var(--card-shadow);
+    background-color: #fff;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: scale(1.02); /* Pequeno zoom ao passar o mouse */
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2); /* Sombra mais intensa */
+}
+
+.card-img-top,
+.card img {
+    max-height: 200px;
+    width: 100%;
+    object-fit: cover;
+}
+
+/* Imagens responsivas para cartões */
+.img-card {
+    height: 200px;
+    object-fit: cover;
+    width: 100%;
+    border-radius: 8px;
+}
+
+/* Botões */
+.btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 4px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.btn:hover {
+    background-color: var(--primary-hover-color);
+    transform: translateY(-2px); /* Efeito de "levantamento" */
+}
+
+.btn:active {
+    transform: translateY(0); /* Remove o efeito ao clicar */
+}
+
+/* Listas */
+.list-group-item {
+    margin-bottom: 10px;
+    padding: 10px 15px;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+/* Títulos e Formatação de Texto */
+h1, h2 {
+    text-align: center;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+h2, h3, h4 {
+    color: var(--text-color);
+    font-weight: bold;
+}
+
+/* Listas de Reservas */
+ul.list-group {
+    margin-top: 30px;
+}
+
+/* Layout Responsivo para Cartões */
+.row > .col-md-4 {
+    display: flex;
+    align-items: stretch;
+    height: 100%;
+}
+
+.card-body {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.card-title,
+.card-text,
+.btn {
+    margin-bottom: 10px;
+}
+
+/* Ajuste responsivo para dispositivos móveis */
+@media (max-width: 768px) {
+    .card {
+        margin-bottom: 15px;
+    }
+    .btn {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+    }
+}

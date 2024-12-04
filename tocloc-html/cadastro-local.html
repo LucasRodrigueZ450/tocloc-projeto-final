@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Local Esportivo - Tocloc</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- FontAwesome (para os ícones) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+
+        .container {
+            min-height: 80vh;
+        }
+
+        footer {
+            position: relative;
+            bottom: 0;
+            width: 100%;
+            background-color: #343a40;
+            color: #fff;
+            padding: 10px 0;
+        }
+
+        .modal-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .card-body {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand" href="#">Tocloc</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard-host.html">Início</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="listar-locais.html">Locais</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="login.html">Entrar</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Formulário de Edição de Local -->
+        <div class="container mt-5">
+            <h2 class="text-center mb-4">Editar Local Esportivo</h2>
+
+            <!-- Mensagem de Sucesso ou Erro -->
+            <div v-if="message" class="alert mt-3" :class="{'alert-success': success, 'alert-danger': !success}">
+                {{ message }}
+            </div>
+
+            <!-- Formulário -->
+            <div v-if="local">
+                <form @submit.prevent="updateLocal">
+                    <div class="form-group">
+                        <label for="nome">Nome do Local</label>
+                        <input type="text" id="nome" v-model="local.nome" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="endereco">Endereço</label>
+                        <input type="text" id="endereco" v-model="local.endereco" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="capacidade">Capacidade</label>
+                        <input type="number" id="capacidade" v-model="local.capacidade" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tipoEsporte">Tipo de Esporte</label>
+                        <input type="text" id="tipoEsporte" v-model="local.tipoEsporte" class="form-control" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                    <a href="locais.html" class="btn btn-secondary ml-2">Cancelar</a>
+                </form>
+            </div>
+            <div v-else class="text-center">
+                <p>Local não encontrado!</p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="bg-dark text-white text-center py-4">
+            <p>&copy; 2023 Tocloc. Todos os direitos reservados.</p>
+        </footer>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                local: null, // Dados do local
+                empresaId: null, // ID da empresa
+                localId: null, // ID do local
+                message: '', // Mensagem de erro ou sucesso
+                success: false // Status da operação
+            },
+            created() {
+                const urlParams = new URLSearchParams(window.location.search);
+                this.localId = urlParams.get('localId');
+                this.empresaId = urlParams.get('empresaId');
+
+                if (this.localId && this.empresaId) {
+                    this.loadLocal();
+                } else {
+                    alert('Local ou empresa não encontrados!');
+                    window.location.href = 'locais.html'; // Redireciona para a página de locais
+                }
+            },
+            methods: {
+                loadLocal() {
+                    // Carregar o local específico pela ID
+                    axios.get(`http://localhost:8080/api/locais-esportivos/${this.localId}`)
+                        .then(response => {
+                            this.local = response.data;
+                        })
+                        .catch(error => {
+                            console.error('Erro ao carregar o local:', error);
+                            alert('Erro ao carregar o local.');
+                        });
+                },
+                updateLocal() {
+                    // Adicionar o empresaId corretamente antes de enviar a requisição
+                    this.local.empresa = { id: this.empresaId }; // Associar a empresa ao local
+
+                    // Verificar se empresaId está presente
+                    if (!this.local.empresa.id) {
+                        alert('Erro: Empresa não associada corretamente!');
+                        return;
+                    }
+
+                    console.log("Dados a serem enviados:", this.local); // Verifique se empresaId está presente
+                    axios.put(`http://localhost:8080/api/locais-esportivos/${this.localId}`, this.local)
+                        .then(response => {
+                            alert('Local atualizado com sucesso!');
+                            window.location.href = `listar-locais.html?empresaId=${this.empresaId}`; // Redireciona para a lista de locais
+                        })
+                        .catch(error => {
+                            console.error('Erro ao atualizar o local:', error);
+                            alert('Erro ao atualizar o local.');
+                        });
+                }
+            }
+        });
+    </script>
+
+    <!-- Bootstrap JS e dependências -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tocloc - Plataforma de Reservas Esportivas</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Arquivo CSS externo -->
+    <link rel="stylesheet" href="assets/css/style.css">
+    <!-- Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand" href="#">Tocloc</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item dropdown" v-if="user">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <img src="assets/img/user-icon.png" alt="Ícone de usuário" class="rounded-circle" width="30"
+                                height="30"> {{ user.name }}
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <a class="dropdown-item" href="#" @click="logout">Sair</a>
+                        </div>
+                    </li>
+                    <li class="nav-item" v-else>
+                        <a class="nav-link" href="login.html">Entrar</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="jumbotron text-center text-white"
+            style="background: url('assets/img/backgraund-hero.jpg') center/cover no-repeat; background-blend-mode: overlay; background-color: rgba(0,0,0,0.5);">
+            <div class="container">
+                <h1 class="display-4">Bem-vindo à Tocloc!</h1>
+                <p class="lead">A plataforma para reservar locais esportivos com facilidade.</p>
+            </div>
+        </section>
+
+        <!-- Locais Esportivos em Destaque -->
+        <section class="container my-5">
+            <h2 class="text-center">Locais Esportivos em Destaque</h2>
+            <div class="row mt-4" v-if="locais.length > 0">
+                <div class="col-md-4" v-for="local in locais" :key="local.id">
+                    <div class="card">
+                        <img :src="getImageUrl(local.tipoEsporte)" class="card-img-top img-card" :alt="local.nome">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ local.nome }}</h5>
+                            <p class="card-text">{{ local.tipoEsporte }} - Capacidade: {{ local.capacidade }} pessoas
+                            </p>
+                            <p class="card-text text-muted">{{ local.endereco }}</p>
+                            <a href="reservar.html" class="btn btn-primary"
+                                @click="salvarIdLocal(local.id)">Reservar</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div v-else class="alert alert-info text-center mt-4">
+                Nenhum local esportivo disponível no momento.
+            </div>
+        </section>
+
+        <!-- Filtro de Status de Reservas -->
+        <section class="container my-5" v-if="user">
+            <h2 class="text-center">Minhas Reservas</h2>
+
+            <!-- Filtro de Status -->
+            <div class="text-center mb-3">
+                <select v-model="filtroStatus" class="form-control w-25 d-inline">
+                    <option value="todos">Todos</option>
+                    <option value="ativos">Ativas</option>
+                    <option value="cancelados">Canceladas</option>
+                    <option value="checkin">Check-in Realizado</option>
+                </select>
+            </div>
+
+            <div v-if="filteredReservas.length > 0" class="row mt-4">
+                <div class="col-md-4" v-for="reserva in filteredReservas" :key="reserva.id">
+                    <div class="card" :class="{'bg-light': !reserva.statusAtiva}">
+                        <img :src="getImageUrl(reserva.localEsportivo.tipoEsporte)" class="card-img-top img-card"
+                            :alt="reserva.localEsportivo.nome">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ reserva.localEsportivo.nome }}</h5>
+                            <p class="card-text">{{ reserva.localEsportivo.tipoEsporte }} - Capacidade: {{
+                                reserva.localEsportivo.capacidade }} pessoas</p>
+                            <p class="card-text text-muted">{{ reserva.localEsportivo.endereco }}</p>
+                            <p class="card-text text-muted">Data da Reserva: {{ reserva.dataHora }}</p>
+
+                            <!-- Botões de Ação -->
+                            <div class="d-flex justify-content-between">
+                                <button class="btn btn-danger"
+                                    :disabled="!reserva.statusAtiva || reserva.checkInRealizado"
+                                    @click="cancelarReserva(reserva.id)"
+                                    :class="{'btn-secondary': !reserva.statusAtiva || reserva.checkInRealizado}">
+                                    {{ reserva.statusAtiva && !reserva.checkInRealizado ? 'Cancelar' : 'Cancelado' }}
+                                </button>
+                                <button class="btn btn-success"
+                                    :disabled="!reserva.statusAtiva || reserva.checkInRealizado"
+                                    @click="checkIn(reserva.id)">
+                                    {{ reserva.checkInRealizado ? 'Check-in Realizado' : 'Check-in' }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div v-else class="alert alert-info text-center mt-4">
+                Você não tem reservas no momento.
+            </div>
+        </section>
+
+        <section class="bg-light py-5">
+            <div class="container">
+                <h2 class="text-center">Sobre a Tocloc</h2>
+                <p class="text-center">Conectamos jogadores e donos de espaços esportivos para que todos possam praticar
+                    seu esporte favorito com facilidade. Faça uma reserva rápida, segura e eficiente, onde e quando
+                    quiser!</p>
+            </div>
+        </section>
+
+        <footer class="bg-dark text-white text-center py-4">
+            <p>&copy; 2023 Tocloc. Todos os direitos reservados.</p>
+        </footer>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                locais: [],
+                user: JSON.parse(localStorage.getItem('user')),
+                reservas: [],
+                filtroStatus: 'todos'  // Novo campo para o filtro de status
+            },
+            methods: {
+                fetchLocais() {
+                    axios.get('http://localhost:8080/api/locais-esportivos/locais-empresas-ativo')
+                        .then(response => {
+                            this.locais = response.data.map(local => {
+                                local.imagem = this.getImageUrl(local.tipoEsporte);
+                                return local;
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Erro ao buscar locais esportivos:', error);
+                        });
+                },
+                fetchReservas() {
+                    if (this.user) {
+                        axios.get(`http://localhost:8080/api/common-users/${this.user.id}`)
+                            .then(response => {
+                                this.reservas = response.data.reservas;
+                            })
+                            .catch(error => {
+                                console.error('Erro ao buscar reservas:', error);
+                                this.reservas = [];
+                            });
+                    }
+                },
+                getImageUrl(tipoEsporte) {
+                    const imagens = {
+                        'Futebol': 'campo_society',
+                        'Basquete': 'quadra_basket',
+                        'Tênis': 'quadra_tennis'
+                    };
+                    return imagens[tipoEsporte] ? `assets/img/cards/${imagens[tipoEsporte]}.jpg` : 'assets/img/default.jpg';
+                },
+                logout() {
+                    localStorage.removeItem('user');
+                    this.user = null;
+                    window.location.href = 'login.html';
+                },
+                salvarIdLocal(id) {
+                    localStorage.setItem('idLocal', id);
+                },
+                cancelarReserva(reservaId) {
+                    axios.put(`http://localhost:8080/api/reservas/${reservaId}/cancelar`)
+                        .then(response => {
+                            let reserva = this.reservas.find(r => r.id === reservaId);
+                            if (reserva) {
+                                reserva.statusAtiva = false;
+                            }
+                            alert('Reserva cancelada com sucesso!');
+                        })
+                        .catch(error => {
+                            console.error('Erro ao cancelar a reserva:', error);
+                            alert('Erro ao tentar cancelar a reserva. Tente novamente mais tarde.');
+                        });
+                },
+                checkIn(reservaId) {
+                    axios.put(` http://localhost:8080/api/reservas/${reservaId}/check-in`)
+                        .then(response => {
+                            let reserva = this.reservas.find(r => r.id === reservaId);
+                            if (reserva) {
+                                // Atualize a reserva com os dados que vêm da API, caso a API retorne dados atualizados
+                                reserva = response.data;  // Atualizando com os dados retornados pela API
+
+                                // Atualizando o estado na interface
+                                //reserva.statusAtiva = false;
+                                //reserva.checkInRealizado = true;
+
+                                alert('Check-in realizado com sucesso!');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro ao realizar o check-in:', error);
+                            alert('Erro ao tentar realizar o check-in. Tente novamente mais tarde.');
+                        });
+                }
+
+            },
+            computed: {
+                filteredReservas() {
+                    if (this.filtroStatus === 'todos') {
+                        return this.reservas;
+                    }
+                    return this.reservas.filter(reserva => {
+                        if (this.filtroStatus === 'ativos') {
+                            return reserva.statusAtiva && !reserva.checkInRealizado;
+                        } else if (this.filtroStatus === 'cancelados') {
+                            return !reserva.statusAtiva;
+                        } else if (this.filtroStatus === 'checkin') {
+                            return reserva.checkInRealizado;
+                        }
+                    });
+                }
+            },
+            mounted() {
+                this.fetchLocais();
+                this.fetchReservas();
+            }
+        });
+    </script>
+
+    <!-- Bootstrap JS e dependências -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+
+</html>

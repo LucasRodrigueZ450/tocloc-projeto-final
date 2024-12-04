@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reserva - Tocloc</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="index.html">Tocloc</a>
+    </nav>
+
+    <!-- Formulário de Reserva -->
+    <div id="app" class="container mt-5">
+        <h2 class="text-center">Faça sua Reserva</h2>
+        <div v-if="errorMessage" class="alert alert-danger text-center" role="alert">
+            {{ errorMessage }}
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <!-- Exibição do Local Esportivo Selecionado -->
+                <h4>Local: {{ localEsportivo?.nome }}</h4>
+                <p>Capacidade: {{ localEsportivo?.capacidade }} pessoas</p>
+                <p>Tipo de esporte: {{ localEsportivo?.tipoEsporte }}</p>
+
+                <!-- Calendário de Disponibilidade -->
+                <h5 class="mt-3">Horários Disponíveis:</h5>
+                <ul class="list-group">
+                    <li v-for="disponibilidade in localEsportivo?.disponibilidades" class="list-group-item">
+                        <button 
+                            v-if="disponibilidade.disponibilidade === true" 
+                            class="btn btn-primary" 
+                            @click="selecionarHorario(disponibilidade)">
+                            {{ disponibilidade.dataHora }}
+                        </button>
+                        <span v-else class="text-muted">Indisponível</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white text-center py-4">
+        <p>&copy; 2023 Tocloc. Todos os direitos reservados.</p>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                localEsportivo: null,
+                usuarioId: JSON.parse(localStorage.getItem('user')).id, // Acesso direto ao id do usuário
+                errorMessage: '',
+            },
+            created() {
+                // Verifica se o usuário está autenticado
+                if (!this.usuarioId) {
+                    alert('Usuário não autenticado. Por favor, faça login.');
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                const localId = localStorage.getItem('idLocal'); // Recupera o ID do local selecionado
+                if (!localId) {
+                    alert('Nenhum local selecionado. Por favor, volte à lista de locais.');
+                    window.location.href = '/locais.html';
+                    return;
+                }
+
+                this.carregarLocal(localId);
+            },
+            methods: {
+                carregarLocal(localId) {
+                    axios.get(`http://localhost:8080/api/locais-esportivos/${localId}`)
+                        .then(response => {
+                            const local = response.data;
+                            // Filtra apenas as disponibilidades ativas
+                            local.disponibilidades = local.disponibilidades.filter(d => d.disponibilidade === true);
+                            this.localEsportivo = local;
+                        })
+                        .catch(error => {
+                            console.error('Erro ao carregar o local:', error);
+                            this.errorMessage = 'Erro ao carregar o local esportivo. Por favor, tente novamente.';
+                        });
+                },
+                selecionarHorario(disponibilidade) {
+                    const reserva = {
+                        dataHora: disponibilidade.dataHora,
+                        statusAtiva: true,
+                        usuarioComum: { id: this.usuarioId },
+                        localEsportivo: { id: this.localEsportivo.id }
+                    };
+
+                    // Primeiro, tenta realizar a reserva
+                    axios.post('http://localhost:8080/api/reservas', reserva)
+                        .then(response => {
+                            // Reserva confirmada com sucesso, agora atualiza a disponibilidade para "reservada"
+                            this.marcarComoReservada(disponibilidade.id);
+                            alert('Reserva confirmada com sucesso!');
+                            window.location.href = 'dashboard-common.html'; // Redireciona para a página de reservas
+                        })
+                        .catch(error => {
+                            console.error('Erro ao confirmar a reserva:', error);
+                            if (error.response) {
+                                // Se o erro tiver uma resposta do servidor
+                                if (error.response.status === 400) {
+                                    this.errorMessage = 'Erro: Não foi possível criar a reserva. Verifique os dados e tente novamente.';
+                                } else {
+                                    this.errorMessage = 'Erro ao confirmar a reserva. Por favor, tente novamente.';
+                                }
+                            } else {
+                                this.errorMessage = 'Erro ao tentar se comunicar com o servidor.';
+                            }
+                        });
+                },
+
+                // Método para atualizar a disponibilidade para "reservada"
+                marcarComoReservada(idDisponibilidade) {
+                    axios.put(`http://localhost:8080/api/disponibilidades/disponibilidade-reservada/${idDisponibilidade}`)
+                        .then(response => {
+                            // Atualiza a lista de disponibilidades removendo o horário reservado
+                            const disponibilidade = this.localEsportivo.disponibilidades.find(d => d.id === idDisponibilidade);
+                            if (disponibilidade) {
+                                disponibilidade.disponibilidade = false; // Marca como indisponível
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro ao atualizar a disponibilidade:', error);
+                            this.errorMessage = 'Erro ao atualizar a disponibilidade. Tente novamente.';
+                        });
+                }
+            }
+        });
+    </script>
+
+</body>
+
+</html>
